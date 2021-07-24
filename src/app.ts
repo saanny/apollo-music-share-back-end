@@ -4,9 +4,14 @@ import express, { Application } from "express";
 import { buildSchema } from "type-graphql";
 import { graphqlUploadExpress } from "graphql-upload";
 import { SongResolver } from "./resolvers/UploadResolver";
-import path, { resolve } from "path";
 import { createConnection } from "typeorm";
 import { Song } from "./entities/song";
+import cors from "cors";
+
+const corsOptions = {
+  origin: "http://localhost:3000",
+  credentials: true,
+};
 export default class App {
   public app: Application;
   public apolloServer: ApolloServer;
@@ -14,14 +19,8 @@ export default class App {
     this.app = express();
   }
   public async start() {
-    this.app.use("/public", express.static(path.join(__dirname, "../public")));
-    this.app.use(express.static(resolve("public")));
-    this.app.use(
-      graphqlUploadExpress({
-        maxFileSize: 10000000,
-        maxFiles: 10,
-      })
-    );
+    this.app.use(cors(corsOptions));
+
     try {
       await createConnection({
         type: "mongodb",
@@ -40,7 +39,6 @@ export default class App {
         validate: false,
       }),
       context: ({ req, res }) => ({ req, res }),
-      uploads: false,
     });
     this.apolloServer.applyMiddleware({ app: this.app, cors: false });
     this.app.listen("5000", () => {

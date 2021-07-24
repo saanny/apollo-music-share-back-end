@@ -7,7 +7,10 @@ import {
   ObjectType,
   Field,
   InputType,
+  Subscription,
 } from "type-graphql";
+import { ApolloError } from "apollo-server";
+
 import { InjectRepository } from "typeorm-typedi-extensions";
 import { getMongoRepository, MongoRepository } from "typeorm";
 @ObjectType()
@@ -20,15 +23,15 @@ export class DeleteSongResponse {
 
 @InputType()
 export class CreateSongInput {
-  @Field()
+  @Field(() => String!)
   title: string;
-  @Field()
+  @Field(() => String!)
   artist: string;
-  @Field()
+  @Field(() => String!)
   url: string;
-  @Field()
+  @Field(() => String!)
   duration: number;
-  @Field()
+  @Field(() => String!)
   thumbnail: string;
 }
 @Resolver()
@@ -43,20 +46,18 @@ export class SongResolver {
   songs(): Promise<Song[]> {
     return this.songRepository.find();
   }
+  @Query(() => [Song])
+  Subscription(): Promise<Song[]> {
+    return this.songRepository.find();
+  }
 
-  @Mutation(() => Boolean)
-  async createSong(@Arg("input") input: CreateSongInput): Promise<Boolean> {
-    try {
-      await this.songRepository
-        .create({
-          ...input,
-        })
-        .save();
-    } catch (error) {
-      console.log(error);
-      return false;
-    }
-    return true;
+  @Mutation(() => Song!)
+  async createSong(@Arg("input") input: CreateSongInput): Promise<Song> {
+    return this.songRepository
+      .create({
+        ...input,
+      })
+      .save();
   }
 
   @Query(() => Song!, { nullable: true })
@@ -68,20 +69,21 @@ export class SongResolver {
       return null;
     }
   }
-  @Mutation(() => DeleteSongResponse)
-  async deleteSong(@Arg("id") id: string) {
-    try {
-      await this.songRepository.delete(id);
-      return {
-        id,
-        deleted: true,
-      };
-    } catch (error) {
-      console.log(error);
-      return {
-        id,
-        deleted: false,
-      };
-    }
-  }
+
+  // @Mutation(() => DeleteSongResponse)
+  // async deleteSong(@Arg("id") id: string) {
+  //   try {
+  //     await this.songRepository.delete(id);
+  //     return {
+  //       id,
+  //       deleted: true,
+  //     };
+  //   } catch (error) {
+  //     console.log(error);
+  //     return {
+  //       id,
+  //       deleted: false,
+  //     };
+  //   }
+  // }
 }

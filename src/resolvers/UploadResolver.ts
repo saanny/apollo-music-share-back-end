@@ -1,40 +1,87 @@
-import { Images } from "../entities/Images";
-import { Arg, Mutation, Query, Resolver } from "type-graphql";
+import { Song } from "../entities/song";
+import {
+  Arg,
+  Mutation,
+  Query,
+  Resolver,
+  ObjectType,
+  Field,
+  InputType,
+} from "type-graphql";
 import { InjectRepository } from "typeorm-typedi-extensions";
 import { getMongoRepository, MongoRepository } from "typeorm";
-import { GraphQLUpload } from "apollo-server-express";
-import { FileUpload } from "graphql-upload";
-import storeUpload from "../utils/storeUpload";
+@ObjectType()
+export class DeleteSongResponse {
+  @Field(() => String)
+  id: string;
+  @Field(() => Boolean)
+  deleted: Boolean;
+}
 
+@InputType()
+export class CreateSongInput {
+  @Field()
+  title: string;
+  @Field()
+  artist: string;
+  @Field()
+  url: string;
+  @Field()
+  duration: number;
+  @Field()
+  thumbnail: string;
+}
 @Resolver()
-export class UploadResolver {
+export class SongResolver {
   constructor(
-    @InjectRepository(Images)
-    private uploadRepository: MongoRepository<Images>
+    @InjectRepository(Song)
+    private songRepository: MongoRepository<Song>
   ) {
-    this.uploadRepository = getMongoRepository(Images);
+    this.songRepository = getMongoRepository(Song);
   }
-  @Query(() => [Images])
-  images(): Promise<Images[]> {
-    return this.uploadRepository.find();
+  @Query(() => [Song])
+  songs(): Promise<Song[]> {
+    return this.songRepository.find();
   }
-  @Mutation(() => String)
-  async uploadImage(
-    @Arg("file", (type) => GraphQLUpload) file: FileUpload
-  ): String {
-    let storedFileName: string;
+
+  @Mutation(() => Boolean)
+  async createSong(@Arg("input") input: CreateSongInput): Promise<Boolean> {
     try {
-      storedFileName = await storeUpload(file);
+      await this.songRepository
+        .create({
+          ...input,
+        })
+        .save();
     } catch (error) {
       console.log(error);
+      return false;
     }
+    return true;
+  }
+
+  @Query(() => Song!, { nullable: true })
+  song(@Arg("id") id: string) {
     try {
-      await this.uploadRepository.create({
-        name: storedFileName,
-      });
+      return this.songRepository.findOne(id);
     } catch (error) {
       console.log(error);
+      return null;
     }
-    return storedFileName;
+  }
+  @Mutation(() => DeleteSongResponse)
+  async deleteSong(@Arg("id") id: string) {
+    try {
+      await this.songRepository.delete(id);
+      return {
+        id,
+        deleted: true,
+      };
+    } catch (error) {
+      console.log(error);
+      return {
+        id,
+        deleted: false,
+      };
+    }
   }
 }

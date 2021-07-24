@@ -3,10 +3,10 @@ import { ApolloServer } from "apollo-server-express";
 import express, { Application } from "express";
 import { buildSchema } from "type-graphql";
 import { graphqlUploadExpress } from "graphql-upload";
-import { UploadResolver } from "./resolvers/UploadResolver";
+import { SongResolver } from "./resolvers/UploadResolver";
 import path, { resolve } from "path";
 import { createConnection } from "typeorm";
-import { Images } from "./entities/Images";
+import { Song } from "./entities/song";
 export default class App {
   public app: Application;
   public apolloServer: ApolloServer;
@@ -28,15 +28,15 @@ export default class App {
         useUnifiedTopology: true,
         host: "localhost",
         port: 27017,
-        database: "uploadGraphql",
-        entities: [Images],
+        database: "songList",
+        entities: [Song],
       });
     } catch (error) {
       console.log(error);
     }
     this.apolloServer = new ApolloServer({
       schema: await buildSchema({
-        resolvers: [UploadResolver],
+        resolvers: [SongResolver],
         validate: false,
       }),
       context: ({ req, res }) => ({ req, res }),

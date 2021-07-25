@@ -1,4 +1,5 @@
 import { Song } from "../entities/song";
+import { QueueSongs } from "../entities/queue";
 import {
   Arg,
   Mutation,
@@ -8,6 +9,7 @@ import {
   Field,
   InputType,
   Subscription,
+  Float,
 } from "type-graphql";
 import { ApolloError } from "apollo-server";
 
@@ -29,7 +31,7 @@ export class CreateSongInput {
   artist: string;
   @Field(() => String!)
   url: string;
-  @Field(() => String!)
+  @Field(() => Float!)
   duration: number;
   @Field(() => String!)
   thumbnail: string;
@@ -38,22 +40,33 @@ export class CreateSongInput {
 export class SongResolver {
   constructor(
     @InjectRepository(Song)
-    private songRepository: MongoRepository<Song>
+    private songRepository: MongoRepository<Song>,
+    @InjectRepository(QueueSongs)
+    private queueRepository: MongoRepository<QueueSongs>
   ) {
     this.songRepository = getMongoRepository(Song);
+    this.queueRepository = getMongoRepository(QueueSongs);
   }
   @Query(() => [Song])
   songs(): Promise<Song[]> {
     return this.songRepository.find();
   }
   @Query(() => [Song])
-  Subscription(): Promise<Song[]> {
-    return this.songRepository.find();
+  queue(): Promise<Song[]> {
+    return this.queueRepository.find();
   }
-
   @Mutation(() => Song!)
   async createSong(@Arg("input") input: CreateSongInput): Promise<Song> {
     return this.songRepository
+      .create({
+        ...input,
+      })
+      .save();
+  }
+
+  @Mutation(() => Song!)
+  async addQueue(@Arg("input") input: CreateSongInput): Promise<Song> {
+    return this.queueRepository
       .create({
         ...input,
       })
@@ -70,20 +83,20 @@ export class SongResolver {
     }
   }
 
-  // @Mutation(() => DeleteSongResponse)
-  // async deleteSong(@Arg("id") id: string) {
-  //   try {
-  //     await this.songRepository.delete(id);
-  //     return {
-  //       id,
-  //       deleted: true,
-  //     };
-  //   } catch (error) {
-  //     console.log(error);
-  //     return {
-  //       id,
-  //       deleted: false,
-  //     };
-  //   }
-  // }
+  @Mutation(() => DeleteSongResponse)
+  async deleteQueueSong(@Arg("id") id: string) {
+    try {
+      await this.queueRepository.delete(id);
+      return {
+        id,
+        deleted: true,
+      };
+    } catch (error) {
+      console.log(error);
+      return {
+        id,
+        deleted: false,
+      };
+    }
+  }
 }

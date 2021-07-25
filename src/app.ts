@@ -3,9 +3,10 @@ import { ApolloServer } from "apollo-server-express";
 import express, { Application } from "express";
 import { buildSchema } from "type-graphql";
 import { graphqlUploadExpress } from "graphql-upload";
-import { SongResolver } from "./resolvers/UploadResolver";
+import { SongResolver } from "./resolvers/SongResolver";
 import { createConnection } from "typeorm";
 import { Song } from "./entities/song";
+import { QueueSongs } from "./entities/queue";
 import cors from "cors";
 
 const corsOptions = {
@@ -28,7 +29,7 @@ export default class App {
         host: "localhost",
         port: 27017,
         database: "songList",
-        entities: [Song],
+        entities: [Song, QueueSongs],
       });
     } catch (error) {
       console.log(error);
